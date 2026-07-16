@@ -1,10 +1,10 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Scale } from 'lucide-react';
 
-import { LockedState } from './LockedState';
-import { ProfileTab } from './ProfileTab';
-import { VotingPhase } from './VotingPhase';
-import { SwipePhase } from './SwipePhase';
+import { LockedState } from "./LockedState";
+import { ProfileTab } from "./ProfileTab";
+import { VotingPhase } from "./VotingPhase";
+import { SwipePhase } from "./SwipePhase";
 
 import { PROFILES, DAILY_QUOTA, YOU_ID } from '../constants/profiles';
 import { buildShuffledVotingQueue, buildShuffledSwipeQueue } from '../utils/queueBuilder';
