@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+﻿import React, { useState, useCallback, useRef } from 'react';
 import { Scale } from 'lucide-react';
 
 import { LockedState } from "./LockedState";

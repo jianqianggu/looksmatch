@@ -59,7 +59,7 @@ export function VotingPhase({ pair, votesToday, quota, flash, onVote, onUndo, ca
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 16 }}>
         <button className="vote-btn" onClick={() => onVote(a, b)} style={voteBtnStyle('#FF5C7A')}>
-          Looksmatch — same league
+          Looksmatch ï¿½ same league
         </button>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="vote-btn" onClick={() => onVote(a, b)} style={{ ...voteBtnStyle('#4FD1C5'), flex: 1 }}>
@@ -72,7 +72,7 @@ export function VotingPhase({ pair, votesToday, quota, flash, onVote, onUndo, ca
       </div>
 
       <p style={{ fontSize: 11, color: '#565A66', textAlign: 'center', marginTop: 14 }}>
-        You won't see how the crowd voted — that's what keeps the verdict honest.
+        You won't see how the crowd voted ï¿½ that's what keeps the verdict honest.
       </p>
     </>
   );

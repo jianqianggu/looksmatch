@@ -54,7 +54,7 @@ export function SwipePhase({ candidate, reveal, onSwipe, onUndo, canUndo, matche
                   {reveal.verdict === 'match' ? 'LOOKSMATCHED ?' : 'NOT LOOKSMATCHED'}
                 </span>
                 <span className="mono" style={{ fontSize: 11, opacity: 0.85 }}>
-                  {reveal.verdict === 'match' ? 'chat unlocked' : 'no chat — different leagues'}
+                  {reveal.verdict === 'match' ? 'chat unlocked' : 'no chat ï¿½ different leagues'}
                 </span>
               </div>
             </div>
@@ -81,7 +81,7 @@ export function SwipePhase({ candidate, reveal, onSwipe, onUndo, canUndo, matche
             </button>
           </div>
           <p style={{ fontSize: 11, color: '#565A66', textAlign: 'center', marginTop: 12 }}>
-            Liking doesn't guarantee a match — only the jury's verdict unlocks chat.
+            Liking doesn't guarantee a match ï¿½ only the jury's verdict unlocks chat.
           </p>
         </div>
       )}
