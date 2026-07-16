@@ -4,12 +4,12 @@
  * @returns {number} A number between 0 and 1
  */
 export function seededRandom(key) {
-  let h = 2166136261;
-  for (let i = 0; i < key.length; i++) {
-    h ^= key.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return ((h >>> 0) % 10000) / 10000;
+    let h = 2166136261;
+    for (let i = 0; i < key.length; i++) {
+        h ^= key.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+    }
+    return ((h >>> 0) % 10000) / 10000;
 }
 
 /**
@@ -18,7 +18,7 @@ export function seededRandom(key) {
  * @returns {'match' | 'no-match'} The verdict
  */
 export function trueVerdict(key) {
-  return seededRandom(key) < 0.42 ? 'match' : 'no-match';
+    return seededRandom(key) < 0.42 ? "match" : "no-match";
 }
 
 /**
@@ -28,5 +28,5 @@ export function trueVerdict(key) {
  * @returns {string} A normalized pair key
  */
 export function pairKey(a, b) {
-  return [a, b].sort((x, y) => x - y).join('-');
+    return [a, b].sort((x, y) => x - y).join("-");
 }

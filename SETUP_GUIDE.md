@@ -8,25 +8,27 @@ Your monolithic `Looksmatch.jsx` has been refactored into a proper React project
 ? **Vite build tooling** - Fast dev server and optimized production builds  
 ? **Modern Node.js workflow** - npm scripts for dev, build, and preview  
 ? **Reusable components** - Each phase and UI element is its own component  
-? **Documented code** - JSDoc comments throughout  
+? **Documented code** - JSDoc comments throughout
 
 ## Installation
 
 1. **Install Node.js** (if you don't have it):
-   - Visit [nodejs.org](https://nodejs.org/) and download LTS version
-   - Verify installation: `node --version` and `npm --version`
+    - Visit [nodejs.org](https://nodejs.org/) and download LTS version
+    - Verify installation: `node --version` and `npm --version`
 
 2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-   This installs React, React DOM, lucide-react icons, and Vite.
+
+    ```bash
+    npm install
+    ```
+
+    This installs React, React DOM, lucide-react icons, and Vite.
 
 3. **Start the dev server**:
-   ```bash
-   npm run dev
-   ```
-   Your browser should open to `http://localhost:3000`
+    ```bash
+    npm run dev
+    ```
+    Your browser should open to `http://localhost:3000`
 
 ## File Structure Explained
 
@@ -80,20 +82,23 @@ npm run preview
 3. Hot module replacement will reload automatically
 
 Example:
+
 ```jsx
 // src/components/MyNewComponent.jsx
 export function MyNewComponent() {
-  return <div>Hello!</div>;
+    return <div>Hello!</div>;
 }
 ```
 
 ### Modifying Styles
 
 All styles are in `src/styles/`:
+
 - **Global styles** (fonts, animations): `globalStyles.js`
 - **Button styles** (reusable style functions): `buttonStyles.js`
 
 Colors used throughout:
+
 - Primary accent: `#F2B84B` (yellow)
 - Primary action: `#FF5C7A` (pink/red)
 - Secondary: `#4FD1C5` (teal)
@@ -104,10 +109,11 @@ Colors used throughout:
 ### Using Constants
 
 Update candidate profiles in `src/constants/profiles.js`:
+
 ```javascript
 export const PROFILES = [
-  { id: 1, name: "...", age: 27, tagline: "...", photo: "..." },
-  // ...
+    { id: 1, name: "...", age: 27, tagline: "...", photo: "..." },
+    // ...
 ];
 ```
 
@@ -119,28 +125,30 @@ export const PROFILES = [
 ## Next Steps for Deployment
 
 1. **Connect a Backend**:
-   - Replace mock profiles with real API data
-   - Store voting data in a database
-   - Implement user authentication
+    - Replace mock profiles with real API data
+    - Store voting data in a database
+    - Implement user authentication
 
 2. **Deploy**:
-   - **Vercel** (easiest): `npm install -g vercel` ? `vercel`
-   - **Netlify**: Drag-and-drop `dist/` folder
-   - **Docker**: Create a Dockerfile with `npm run build`
+    - **Vercel** (easiest): `npm install -g vercel` ? `vercel`
+    - **Netlify**: Drag-and-drop `dist/` folder
+    - **Docker**: Create a Dockerfile with `npm run build`
 
 3. **Optimize**:
-   - Add TypeScript for type safety
-   - Set up ESLint and Prettier
-   - Add testing with Vitest/React Testing Library
+    - Add TypeScript for type safety
+    - Set up ESLint and Prettier
+    - Add testing with Vitest/React Testing Library
 
 ## Troubleshooting
 
 **Port 3000 already in use?**
+
 ```bash
 npm run dev -- --port 3001
 ```
 
 **Node modules issues?**
+
 ```bash
 rm -rf node_modules
 npm install
@@ -148,6 +156,7 @@ npm install
 
 **Build errors?**
 Check `vite.config.js` and ensure React plugin is installed:
+
 ```bash
 npm install @vitejs/plugin-react
 ```

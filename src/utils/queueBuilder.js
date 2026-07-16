@@ -4,12 +4,12 @@
  * @returns {Array} Shuffled array
  */
 function shuffle(arr) {
-  const copy = [...arr];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const k = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[k]] = [copy[k], copy[i]];
-  }
-  return copy;
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i--) {
+        const k = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[k]] = [copy[k], copy[i]];
+    }
+    return copy;
 }
 
 /**
@@ -18,13 +18,13 @@ function shuffle(arr) {
  * @returns {Array} Array of [profileA, profileB] pairs
  */
 export function buildShuffledVotingQueue(profiles) {
-  const pairs = [];
-  for (let i = 0; i < profiles.length; i++) {
-    for (let j = i + 1; j < profiles.length; j++) {
-      pairs.push([profiles[i], profiles[j]]);
+    const pairs = [];
+    for (let i = 0; i < profiles.length; i++) {
+        for (let j = i + 1; j < profiles.length; j++) {
+            pairs.push([profiles[i], profiles[j]]);
+        }
     }
-  }
-  return shuffle(pairs);
+    return shuffle(pairs);
 }
 
 /**
@@ -33,5 +33,5 @@ export function buildShuffledVotingQueue(profiles) {
  * @returns {Array} Shuffled array of profiles
  */
 export function buildShuffledSwipeQueue(profiles) {
-  return shuffle(profiles);
+    return shuffle(profiles);
 }
