@@ -43,7 +43,7 @@ function resizeProfilePhoto(file) {
 /**
  * ProfileTab - Allows user to set their name, age, tagline, and photo
  */
-export function ProfileTab({ profile, setProfile, profileSubmitted, submitError, photoUploadStatus, onSubmit }) {
+export function ProfileTab({ profile, setProfile, profileSubmitted, submitError, photoUploadStatus, syncedPhotos = [], onSubmit }) {
     const fileInputRef = useRef(null);
     const [photoError, setPhotoError] = useState("");
 
@@ -186,6 +186,42 @@ export function ProfileTab({ profile, setProfile, profileSubmitted, submitError,
                 >
                     <Sparkles size={13} /> In the voting pool. Edits here update it live.
                 </p>
+            )}
+
+            {syncedPhotos.length > 0 && (
+                <div
+                    style={{
+                        marginTop: 18,
+                        background: "#1A1C23",
+                        border: "1px solid #2A2D37",
+                        borderRadius: 12,
+                        padding: 12,
+                    }}
+                >
+                    <p className="mono" style={{ fontSize: 11, color: "#8A8D99", margin: "0 0 10px" }}>
+                        STATIC PHOTO MIRROR
+                    </p>
+                    <div style={{ display: "flex", gap: 8, overflow: "hidden" }}>
+                        {syncedPhotos.map((photo) => (
+                            <img
+                                key={photo.id}
+                                src={photo.src}
+                                alt=""
+                                loading="lazy"
+                                style={{
+                                    width: 42,
+                                    height: 42,
+                                    borderRadius: 10,
+                                    objectFit: "cover",
+                                    border: "1px solid #2A2D37",
+                                }}
+                            />
+                        ))}
+                    </div>
+                    <p style={{ fontSize: 11, color: "#565A66", margin: "10px 0 0" }}>
+                        Showing a capped sample mirrored into GitHub Pages, not live-loaded from Firebase.
+                    </p>
+                </div>
             )}
         </>
     );

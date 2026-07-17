@@ -11,6 +11,7 @@ import { buildShuffledVotingQueue, buildShuffledSwipeQueue } from "../utils/queu
 import { computeVerdict, pairKey } from "../utils/verdictEngine";
 import { fbGet, fbPost, fbPut } from "../utils/firebase";
 import { canWrite, recordWrite } from "../utils/rateLimiter";
+import { fetchStaticPhotos } from "../utils/staticPhotoManifest";
 import { globalStyles } from "../styles/globalStyles";
 import { tabBtnStyle } from "../styles/buttonStyles";
 
@@ -100,6 +101,7 @@ export default function LooksmatchApp() {
     const [profileSubmitted, setProfileSubmitted] = useState(false);
     const [submitError, setSubmitError] = useState("");
     const [photoUploadStatus, setPhotoUploadStatus] = useState("");
+    const [syncedPhotos, setSyncedPhotos] = useState([]);
     const lastUploadedPhoto = useRef(null);
 
     // Queue state
@@ -124,6 +126,10 @@ export default function LooksmatchApp() {
     // Derived state
     const swipingUnlocked = profileSubmitted && votesToday >= DAILY_QUOTA;
     const swipeDone = swipeCursor >= swipeQueue.length;
+
+    useEffect(() => {
+        fetchStaticPhotos().then(setSyncedPhotos);
+    }, []);
 
     // ---- PROFILE PHASE ----
 
@@ -338,6 +344,7 @@ export default function LooksmatchApp() {
                         profileSubmitted={profileSubmitted}
                         submitError={submitError}
                         photoUploadStatus={photoUploadStatus}
+                        syncedPhotos={syncedPhotos}
                         onSubmit={submitProfile}
                     />
                 )}
