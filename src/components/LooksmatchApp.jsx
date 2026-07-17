@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback, useRef } from "react";
+﻿import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Scale } from "lucide-react";
 
 import { LockedState } from "./LockedState";
@@ -8,9 +8,69 @@ import { SwipePhase } from "./SwipePhase";
 
 import { PROFILES, DAILY_QUOTA, YOU_ID } from "../constants/profiles";
 import { buildShuffledVotingQueue, buildShuffledSwipeQueue } from "../utils/queueBuilder";
-import { pairKey, trueVerdict } from "../utils/verdictEngine";
+import { computeVerdict, pairKey } from "../utils/verdictEngine";
+import { fbGet, fbPut } from "../utils/firebase";
+import { canWrite, recordWrite } from "../utils/rateLimiter";
 import { globalStyles } from "../styles/globalStyles";
 import { tabBtnStyle } from "../styles/buttonStyles";
+
+const VOTE_CHOICES = ["sameLeague", "aOverB", "bOverA"];
+
+function createEmptyVoteTally() {
+    return { sameLeague: 0, aOverB: 0, bOverA: 0, totalVotes: 0, lastUpdated: 0 };
+}
+
+function normalizeVoteTally(data) {
+    const empty = createEmptyVoteTally();
+    if (!data || typeof data !== "object") return empty;
+
+    return {
+        sameLeague: Number(data.sameLeague) || 0,
+        aOverB: Number(data.aOverB) || 0,
+        bOverA: Number(data.bOverA) || 0,
+        totalVotes: Number(data.totalVotes) || 0,
+        lastUpdated: Number(data.lastUpdated) || 0,
+    };
+}
+
+function incrementVoteTally(data, choice) {
+    const tally = normalizeVoteTally(data);
+    return {
+        ...tally,
+        [choice]: tally[choice] + 1,
+        totalVotes: tally.totalVotes + 1,
+        lastUpdated: Date.now(),
+    };
+}
+
+function decrementVoteTally(data, choice) {
+    const tally = normalizeVoteTally(data);
+    const nextChoiceCount = Math.max(0, tally[choice] - 1);
+    const decrement = tally[choice] > nextChoiceCount ? 1 : 0;
+
+    return {
+        ...tally,
+        [choice]: nextChoiceCount,
+        totalVotes: Math.max(0, tally.totalVotes - decrement),
+        lastUpdated: Date.now(),
+    };
+}
+
+async function syncVoteToFirebase(key, choice) {
+    if (!VOTE_CHOICES.includes(choice) || !canWrite()) return;
+
+    const data = incrementVoteTally(await fbGet(`votes/${key}`), choice);
+    const result = await fbPut(`votes/${key}`, data);
+    if (result) recordWrite();
+}
+
+async function syncVoteUndoToFirebase(key, choice) {
+    if (!VOTE_CHOICES.includes(choice) || !canWrite()) return;
+
+    const data = decrementVoteTally(await fbGet(`votes/${key}`), choice);
+    const result = await fbPut(`votes/${key}`, data);
+    if (result) recordWrite();
+}
 
 /**
  * Main Looksmatch Application
@@ -33,6 +93,7 @@ export default function LooksmatchApp() {
     const [votingQueue] = useState(() => buildShuffledVotingQueue(PROFILES));
     const [swipeQueue] = useState(() => buildShuffledSwipeQueue(PROFILES));
     const [resolved, setResolved] = useState({}); // pairKey -> 'match' | 'no-match'
+    const [voteTallies, setVoteTallies] = useState({}); // pairKey -> Firebase vote tally
 
     // Voting phase state
     const [votesToday, setVotesToday] = useState(0);
@@ -51,6 +112,12 @@ export default function LooksmatchApp() {
     const swipingUnlocked = profileSubmitted && votesToday >= DAILY_QUOTA;
     const swipeDone = swipeCursor >= swipeQueue.length;
 
+    useEffect(() => {
+        fbGet("votes").then((data) => {
+            if (data) setVoteTallies(data);
+        });
+    }, []);
+
     // ---- PROFILE PHASE ----
 
     const submitProfile = () => {
@@ -68,37 +135,52 @@ export default function LooksmatchApp() {
     const currentVotingPair = votingQueue[votingCursor];
 
     const castVote = useCallback(
-        (a, b) => {
+        (a, b, choice) => {
             const key = pairKey(a.id, b.id);
             const hadPrevious = key in resolved;
             const prevValue = resolved[key];
+            const optimisticTally = VOTE_CHOICES.includes(choice)
+                ? incrementVoteTally(voteTallies[key], choice)
+                : null;
+            setVoteTallies((prev) => {
+                if (!VOTE_CHOICES.includes(choice)) return prev;
 
-            setResolved((prev) => (key in prev ? prev : { ...prev, [key]: trueVerdict(key) }));
+                return { ...prev, [key]: incrementVoteTally(prev[key], choice) };
+            });
+
+            syncVoteToFirebase(key, choice);
+            setResolved((prev) =>
+                key in prev ? prev : { ...prev, [key]: computeVerdict(optimisticTally, key) }
+            );
             setVoteFlash(true);
             setTimeout(() => setVoteFlash(false), 220);
 
-            setVoteHistory((h) => [...h, { key, cursorBefore: votingCursor, hadPrevious, prevValue }]);
+            setVoteHistory((h) => [...h, { key, cursorBefore: votingCursor, hadPrevious, prevValue, choice }]);
             setVotesToday((v) => v + 1);
             setVotingCursor((c) => c + 1);
         },
-        [votingCursor, resolved]
+        [votingCursor, resolved, voteTallies]
     );
 
     const undoVote = useCallback(() => {
-        setVoteHistory((h) => {
-            if (h.length === 0) return h;
-            const last = h[h.length - 1];
-            setVotingCursor(last.cursorBefore);
-            setVotesToday((v) => Math.max(0, v - 1));
-            setResolved((prev) => {
-                const copy = { ...prev };
-                if (last.hadPrevious) copy[last.key] = last.prevValue;
-                else delete copy[last.key];
-                return copy;
-            });
-            return h.slice(0, -1);
+        const last = voteHistory[voteHistory.length - 1];
+        if (!last) return;
+
+        setVotingCursor(last.cursorBefore);
+        setVotesToday((v) => Math.max(0, v - 1));
+        setResolved((prev) => {
+            const copy = { ...prev };
+            if (last.hadPrevious) copy[last.key] = last.prevValue;
+            else delete copy[last.key];
+            return copy;
         });
-    }, []);
+        setVoteTallies((prev) => {
+            if (!VOTE_CHOICES.includes(last.choice)) return prev;
+            return { ...prev, [last.key]: decrementVoteTally(prev[last.key], last.choice) };
+        });
+        syncVoteUndoToFirebase(last.key, last.choice);
+        setVoteHistory((h) => h.slice(0, -1));
+    }, [voteHistory]);
 
     // ---- SWIPING PHASE ----
 
@@ -108,7 +190,7 @@ export default function LooksmatchApp() {
         (liked) => {
             if (!currentCandidate || reveal) return;
             const key = pairKey(YOU_ID, currentCandidate.id);
-            const verdict = resolved[key] || trueVerdict(key);
+            const verdict = resolved[key] || computeVerdict(voteTallies[key] || null, key);
             setResolved((prev) => ({ ...prev, [key]: verdict }));
             setReveal({ verdict, candidate: currentCandidate, liked });
 
@@ -125,7 +207,7 @@ export default function LooksmatchApp() {
                 setSwipeCursor((c) => c + 1);
             }, 1500);
         },
-        [currentCandidate, reveal, resolved, swipeCursor]
+        [currentCandidate, reveal, resolved, swipeCursor, voteTallies]
     );
 
     const undoSwipe = useCallback(() => {
@@ -214,6 +296,7 @@ export default function LooksmatchApp() {
                             votesToday={votesToday}
                             quota={DAILY_QUOTA}
                             flash={voteFlash}
+                            tallies={voteTallies}
                             onVote={castVote}
                             onUndo={undoVote}
                             canUndo={voteHistory.length > 0}

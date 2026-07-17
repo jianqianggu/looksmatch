@@ -2,11 +2,12 @@ import React from "react";
 import { Sparkles, Undo2 } from "lucide-react";
 import { PhotoCard } from "./PhotoCard";
 import { voteBtnStyle, undoBtnStyle } from "../styles/buttonStyles";
+import { pairKey } from "../utils/verdictEngine";
 
 /**
  * VotingPhase - Displays a pair of candidates and voting buttons
  */
-export function VotingPhase({ pair, votesToday, quota, flash, onVote, onUndo, canUndo, onGoToMatch }) {
+export function VotingPhase({ pair, votesToday, quota, flash, tallies, onVote, onUndo, canUndo, onGoToMatch }) {
     if (!pair || votesToday >= quota) {
         return (
             <div
@@ -37,6 +38,8 @@ export function VotingPhase({ pair, votesToday, quota, flash, onVote, onUndo, ca
     }
 
     const [a, b] = pair;
+    const currentPairKey = pairKey(a.id, b.id);
+    const pairTally = tallies?.[currentPairKey];
     return (
         <>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
@@ -62,20 +65,20 @@ export function VotingPhase({ pair, votesToday, quota, flash, onVote, onUndo, ca
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
-                <button className="vote-btn" onClick={() => onVote(a, b)} style={voteBtnStyle("#FF5C7A")}>
-                    Looksmatch � same league
+                <button className="vote-btn" onClick={() => onVote(a, b, "sameLeague")} style={voteBtnStyle("#FF5C7A")}>
+                    Looksmatch — same league
                 </button>
                 <div style={{ display: "flex", gap: 8 }}>
                     <button
                         className="vote-btn"
-                        onClick={() => onVote(a, b)}
+                        onClick={() => onVote(a, b, "aOverB")}
                         style={{ ...voteBtnStyle("#4FD1C5"), flex: 1 }}
                     >
                         {a.name} is out of {b.name}'s league
                     </button>
                     <button
                         className="vote-btn"
-                        onClick={() => onVote(a, b)}
+                        onClick={() => onVote(a, b, "bOverA")}
                         style={{ ...voteBtnStyle("#F2B84B"), flex: 1 }}
                     >
                         {b.name} is out of {a.name}'s league
@@ -83,8 +86,14 @@ export function VotingPhase({ pair, votesToday, quota, flash, onVote, onUndo, ca
                 </div>
             </div>
 
+            {pairTally && (
+                <p style={{ fontSize: 11, color: "#565A66", textAlign: "center", marginTop: 8 }}>
+                    {pairTally.totalVotes} votes cast on this pair
+                </p>
+            )}
+
             <p style={{ fontSize: 11, color: "#565A66", textAlign: "center", marginTop: 14 }}>
-                You won't see how the crowd voted � that's what keeps the verdict honest.
+                You won't see how the crowd voted — that's what keeps the verdict honest.
             </p>
         </>
     );
