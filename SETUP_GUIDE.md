@@ -2,7 +2,7 @@
 
 ## What Changed
 
-Your monolithic `Looksmatch.jsx` has been refactored into a proper React project with:
+The prototype has been refactored into a proper React project with:
 
 ? **Organized file structure** - Components, utils, constants, and styles are separated  
 ? **Vite build tooling** - Fast dev server and optimized production builds  
