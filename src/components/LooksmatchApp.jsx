@@ -129,8 +129,20 @@ export default function LooksmatchApp() {
     const swipeDone = swipeCursor >= swipeQueue.length;
 
     useEffect(() => {
-        fetchStaticPhotos().then(setSyncedPhotos);
-    }, []);
+        if (!profileSubmitted) {
+            setSyncedPhotos((current) => (current.length > 0 ? [] : current));
+            return;
+        }
+
+        let cancelled = false;
+        fetchStaticPhotos().then((photos) => {
+            if (!cancelled) setSyncedPhotos(photos);
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [profileSubmitted]);
 
     // ---- PROFILE PHASE ----
 
@@ -296,6 +308,7 @@ export default function LooksmatchApp() {
         setProfileSubmitted(false);
         setSubmitError("");
         setPhotoUploadStatus("");
+        setSyncedPhotos([]);
         setVotingQueue(buildShuffledVotingQueue(PROFILES));
         setSwipeQueue(buildShuffledSwipeQueue(PROFILES));
         setResolved({});

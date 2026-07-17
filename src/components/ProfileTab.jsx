@@ -188,7 +188,7 @@ export function ProfileTab({ profile, setProfile, profileSubmitted, submitError,
                 </p>
             )}
 
-            {syncedPhotos.length > 0 && (
+            {profileSubmitted && syncedPhotos.length > 0 && (
                 <div
                     style={{
                         marginTop: 18,
