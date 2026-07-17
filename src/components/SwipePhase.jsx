@@ -1,12 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import { Heart, X, Undo2, ArrowRight, RotateCcw } from "lucide-react";
-import { PhotoCard } from "./PhotoCard";
+import { AvatarFallback, PhotoCard } from "./PhotoCard";
 import { circleBtnStyle, undoBtnStyle } from "../styles/buttonStyles";
 
 /**
  * SwipePhase - Displays a candidate for swiping and shows matches
  */
 export function SwipePhase({ candidate, reveal, onSwipe, onUndo, canUndo, matches, done }) {
+    const [activeChat, setActiveChat] = useState(null);
     return (
         <>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
@@ -128,15 +129,22 @@ export function SwipePhase({ candidate, reveal, onSwipe, onUndo, canUndo, matche
                                 }}
                             >
                                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                    <img
-                                        src={m.photo}
-                                        alt={m.name}
-                                        style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover" }}
-                                    />
+                                    <div style={{ width: 34, height: 34, borderRadius: "50%", overflow: "hidden" }}>
+                                        {m.photo ? (
+                                            <img
+                                                src={m.photo}
+                                                alt={m.name}
+                                                loading="lazy"
+                                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                            />
+                                        ) : (
+                                            <AvatarFallback profile={m} fontSize={12} />
+                                        )}
+                                    </div>
                                     <span style={{ fontSize: 14 }}>{m.name}</span>
                                 </div>
                                 <button
-                                    onClick={() => alert(`Chat opened with ${m.name} (placeholder).`)}
+                                    onClick={() => setActiveChat(m)}
                                     style={{
                                         display: "flex",
                                         alignItems: "center",
@@ -154,6 +162,54 @@ export function SwipePhase({ candidate, reveal, onSwipe, onUndo, canUndo, matche
                                 </button>
                             </div>
                         ))}
+                    </div>
+                </div>
+            )}
+
+            {activeChat && (
+                <div
+                    style={{
+                        marginTop: 16,
+                        background: "#1A1C23",
+                        border: "1px solid #2A2D37",
+                        borderRadius: 12,
+                        padding: 14,
+                    }}
+                >
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                        <div>
+                            <p className="mono" style={{ fontSize: 11, color: "#8A8D99", margin: 0 }}>
+                                CHAT PREVIEW
+                            </p>
+                            <p style={{ fontWeight: 700, margin: "4px 0 0" }}>{activeChat.name}</p>
+                        </div>
+                        <button
+                            onClick={() => setActiveChat(null)}
+                            style={{
+                                background: "transparent",
+                                border: "none",
+                                color: "#8A8D99",
+                                cursor: "pointer",
+                                fontSize: 12,
+                            }}
+                        >
+                            close
+                        </button>
+                    </div>
+                    <p style={{ color: "#F2F1ED", fontSize: 13, margin: "12px 0 0" }}>
+                        Chat unlock is stubbed for the prototype. No messages are sent or stored yet.
+                    </p>
+                    <div
+                        style={{
+                            marginTop: 10,
+                            border: "1px solid #2A2D37",
+                            borderRadius: 10,
+                            padding: "9px 10px",
+                            color: "#565A66",
+                            fontSize: 12,
+                        }}
+                    >
+                        Message composer placeholder — disabled until chat storage is added.
                     </div>
                 </div>
             )}
