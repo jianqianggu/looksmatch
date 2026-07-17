@@ -1,10 +1,11 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const FIREBASE_URL = process.env.VITE_FIREBASE_URL;
 const PHOTO_SYNC_LIMIT = Number(process.env.PHOTO_SYNC_LIMIT || 12);
 const PHOTO_SYNC_MAX_BYTES = Number(process.env.PHOTO_SYNC_MAX_BYTES || 350000);
+const PHOTO_MANIFEST_LIMIT = Math.max(1, Number(process.env.PHOTO_MANIFEST_LIMIT || 60));
 const OUTPUT_DIR = path.resolve("public/uploads");
 const MANIFEST_PATH = path.join(OUTPUT_DIR, "photos-manifest.json");
 const DATA_URL_PATTERN = /^data:image\/(jpeg|jpg|png|webp);base64,([A-Za-z0-9+/=]+)$/;
@@ -24,6 +25,15 @@ async function loadManifest() {
 
     const manifest = JSON.parse(await readFile(MANIFEST_PATH, "utf8"));
     return { photos: Array.isArray(manifest.photos) ? manifest.photos : [] };
+}
+
+async function removeMirroredPhoto(photo) {
+    if (!photo?.src?.startsWith("uploads/")) return;
+
+    const filepath = path.resolve("public", photo.src);
+    if (!filepath.startsWith(OUTPUT_DIR) || !existsSync(filepath)) return;
+
+    await unlink(filepath);
 }
 
 async function fetchPhotoInbox() {
@@ -73,13 +83,19 @@ async function syncPhotos() {
         });
     }
 
-    const photos = [...manifest.photos, ...newPhotos].sort((a, b) => b.createdAt - a.createdAt);
+    const allPhotos = [...manifest.photos, ...newPhotos].sort((a, b) => b.createdAt - a.createdAt);
+    const photos = allPhotos.slice(0, PHOTO_MANIFEST_LIMIT);
+    const removedPhotos = allPhotos.slice(PHOTO_MANIFEST_LIMIT);
+
+    await Promise.all(removedPhotos.map(removeMirroredPhoto));
     await writeFile(
         MANIFEST_PATH,
         `${JSON.stringify({ updatedAt: Date.now(), photos }, null, 2)}\n`
     );
 
-    console.log(`Synced ${newPhotos.length} Firebase photo${newPhotos.length === 1 ? "" : "s"}.`);
+    console.log(
+        `Synced ${newPhotos.length} Firebase photo${newPhotos.length === 1 ? "" : "s"}; pruned ${removedPhotos.length}.`
+    );
 }
 
 await syncPhotos();

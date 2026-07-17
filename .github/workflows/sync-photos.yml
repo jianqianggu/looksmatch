@@ -27,6 +27,7 @@ jobs:
           VITE_FIREBASE_URL: ${{ secrets.VITE_FIREBASE_URL }}
           PHOTO_SYNC_LIMIT: 12
           PHOTO_SYNC_MAX_BYTES: 350000
+          PHOTO_MANIFEST_LIMIT: 60
       - name: Commit mirrored photos
         run: |
           git config user.name "github-actions[bot]"

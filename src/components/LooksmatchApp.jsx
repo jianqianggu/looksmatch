@@ -100,6 +100,7 @@ export default function LooksmatchApp() {
     const [profileSubmitted, setProfileSubmitted] = useState(false);
     const [submitError, setSubmitError] = useState("");
     const [photoUploadStatus, setPhotoUploadStatus] = useState("");
+    const lastUploadedPhoto = useRef(null);
 
     // Queue state
     const [votingQueue] = useState(() => buildShuffledVotingQueue(PROFILES));
@@ -132,14 +133,19 @@ export default function LooksmatchApp() {
             return;
         }
         setSubmitError("");
-        setPhotoUploadStatus("Uploading compressed photo to Firebase for static sync...");
-        uploadPhotoToFirebase(profile.photo).then((result) => {
-            setPhotoUploadStatus(
-                result
-                    ? "Photo received. GitHub Actions can mirror it into static Pages assets."
-                    : "Photo upload skipped; profile still works locally."
-            );
-        });
+        if (lastUploadedPhoto.current === profile.photo) {
+            setPhotoUploadStatus("Photo already queued; skipping duplicate upload.");
+        } else {
+            setPhotoUploadStatus("Uploading compressed photo to Firebase for static sync...");
+            uploadPhotoToFirebase(profile.photo).then((result) => {
+                if (result) lastUploadedPhoto.current = profile.photo;
+                setPhotoUploadStatus(
+                    result
+                        ? "Photo received. GitHub Actions can mirror it into static Pages assets."
+                        : "Photo upload skipped; profile still works locally."
+                );
+            });
+        }
         setProfileSubmitted(true);
         setTab("vote");
     };
