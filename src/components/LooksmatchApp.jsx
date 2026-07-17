@@ -11,6 +11,7 @@ import { buildShuffledVotingQueue, buildShuffledSwipeQueue } from "../utils/queu
 import { computeVerdict, pairKey } from "../utils/verdictEngine";
 import { fbGet, fbPost, fbPut } from "../utils/firebase";
 import { canWrite, recordWrite } from "../utils/rateLimiter";
+import { hasUploadedPhoto, recordUploadedPhoto } from "../utils/photoUploadLedger";
 import { fetchStaticPhotos } from "../utils/staticPhotoManifest";
 import { globalStyles } from "../styles/globalStyles";
 import { tabBtnStyle } from "../styles/buttonStyles";
@@ -102,7 +103,6 @@ export default function LooksmatchApp() {
     const [submitError, setSubmitError] = useState("");
     const [photoUploadStatus, setPhotoUploadStatus] = useState("");
     const [syncedPhotos, setSyncedPhotos] = useState([]);
-    const lastUploadedPhoto = useRef(null);
 
     // Queue state
     const [votingQueue] = useState(() => buildShuffledVotingQueue(PROFILES));
@@ -139,12 +139,12 @@ export default function LooksmatchApp() {
             return;
         }
         setSubmitError("");
-        if (lastUploadedPhoto.current === profile.photo) {
-            setPhotoUploadStatus("Photo already queued; skipping duplicate upload.");
+        if (hasUploadedPhoto(profile.photo)) {
+            setPhotoUploadStatus("Photo already queued from this browser; skipping duplicate upload.");
         } else {
             setPhotoUploadStatus("Uploading compressed photo to Firebase for static sync...");
             uploadPhotoToFirebase(profile.photo).then((result) => {
-                if (result) lastUploadedPhoto.current = profile.photo;
+                if (result) recordUploadedPhoto(profile.photo);
                 setPhotoUploadStatus(
                     result
                         ? "Photo received. GitHub Actions can mirror it into static Pages assets."
