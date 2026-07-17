@@ -17,6 +17,7 @@ import { globalStyles } from "../styles/globalStyles";
 import { tabBtnStyle } from "../styles/buttonStyles";
 
 const VOTE_CHOICES = ["sameLeague", "aOverB", "bOverA"];
+const EMPTY_PROFILE = { name: "", age: "", tagline: "", photo: null };
 
 function createEmptyVoteTally() {
     return { sameLeague: 0, aOverB: 0, bOverA: 0, totalVotes: 0, lastUpdated: 0 };
@@ -98,15 +99,15 @@ export default function LooksmatchApp() {
     const [tab, setTab] = useState("profile"); // 'profile' | 'vote' | 'match'
 
     // Profile state
-    const [profile, setProfile] = useState({ name: "", age: "", tagline: "", photo: null });
+    const [profile, setProfile] = useState(() => ({ ...EMPTY_PROFILE }));
     const [profileSubmitted, setProfileSubmitted] = useState(false);
     const [submitError, setSubmitError] = useState("");
     const [photoUploadStatus, setPhotoUploadStatus] = useState("");
     const [syncedPhotos, setSyncedPhotos] = useState([]);
 
     // Queue state
-    const [votingQueue] = useState(() => buildShuffledVotingQueue(PROFILES));
-    const [swipeQueue] = useState(() => buildShuffledSwipeQueue(PROFILES));
+    const [votingQueue, setVotingQueue] = useState(() => buildShuffledVotingQueue(PROFILES));
+    const [swipeQueue, setSwipeQueue] = useState(() => buildShuffledSwipeQueue(PROFILES));
     const [resolved, setResolved] = useState({}); // pairKey -> 'match' | 'no-match'
     const [voteTallies, setVoteTallies] = useState({}); // pairKey -> Firebase vote tally
 
@@ -273,7 +274,7 @@ export default function LooksmatchApp() {
         setSwipeHistory((h) => {
             if (h.length === 0) return h;
             const last = h[h.length - 1];
-            if (revealTimer.current) clearTimeout(revealTimer.current);
+            clearTimeout(revealTimer.current);
             setSwipeCursor(last.cursorBefore);
             if (last.addedMatch) {
                 setMatches((prev) => {
@@ -285,6 +286,29 @@ export default function LooksmatchApp() {
             return h.slice(0, -1);
         });
     }, [reveal]);
+
+    const resetDemo = useCallback(() => {
+        clearTimeout(revealTimer.current);
+        revealTimer.current = null;
+
+        setTab("profile");
+        setProfile({ ...EMPTY_PROFILE });
+        setProfileSubmitted(false);
+        setSubmitError("");
+        setPhotoUploadStatus("");
+        setVotingQueue(buildShuffledVotingQueue(PROFILES));
+        setSwipeQueue(buildShuffledSwipeQueue(PROFILES));
+        setResolved({});
+        setVoteTallies({});
+        setVotesToday(0);
+        setVotingCursor(0);
+        setVoteFlash(false);
+        setVoteHistory([]);
+        setSwipeCursor(0);
+        setReveal(null);
+        setMatches([]);
+        setSwipeHistory([]);
+    }, []);
 
     // ---- RENDER ----
 
@@ -384,6 +408,7 @@ export default function LooksmatchApp() {
                             canUndo={swipeHistory.length > 0 && !reveal}
                             matches={matches}
                             done={swipeDone}
+                            onReset={resetDemo}
                         />
                     ))}
             </div>

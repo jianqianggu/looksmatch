@@ -6,7 +6,7 @@ import { circleBtnStyle, undoBtnStyle } from "../styles/buttonStyles";
 /**
  * SwipePhase - Displays a candidate for swiping and shows matches
  */
-export function SwipePhase({ candidate, reveal, onSwipe, onUndo, canUndo, matches, done }) {
+export function SwipePhase({ candidate, reveal, onSwipe, onUndo, onReset, canUndo, matches, done }) {
     const [activeChat, setActiveChat] = useState(null);
     return (
         <>
@@ -215,7 +215,7 @@ export function SwipePhase({ candidate, reveal, onSwipe, onUndo, canUndo, matche
             )}
 
             <button
-                onClick={() => window.location.reload()}
+                onClick={onReset}
                 style={{
                     display: "flex",
                     alignItems: "center",
