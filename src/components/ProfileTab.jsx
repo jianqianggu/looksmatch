@@ -1,19 +1,69 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { Camera, User, Sparkles } from "lucide-react";
 import { labelStyle, voteBtnStyle } from "../styles/buttonStyles";
 
+
+const PHOTO_MAX_EDGE = 480;
+const PHOTO_QUALITY = 0.72;
+const PHOTO_MAX_SOURCE_BYTES = 6 * 1024 * 1024;
+
+function resizeProfilePhoto(file) {
+    return new Promise((resolve, reject) => {
+        const objectUrl = URL.createObjectURL(file);
+        const image = new Image();
+
+        image.onload = () => {
+            URL.revokeObjectURL(objectUrl);
+
+            const scale = Math.min(1, PHOTO_MAX_EDGE / Math.max(image.width, image.height));
+            const width = Math.max(1, Math.round(image.width * scale));
+            const height = Math.max(1, Math.round(image.height * scale));
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d");
+
+            if (!context) {
+                reject(new Error("Could not prepare profile photo"));
+                return;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            context.drawImage(image, 0, 0, width, height);
+            resolve(canvas.toDataURL("image/jpeg", PHOTO_QUALITY));
+        };
+
+        image.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            reject(new Error("Could not read profile photo"));
+        };
+
+        image.src = objectUrl;
+    });
+}
 /**
  * ProfileTab - Allows user to set their name, age, tagline, and photo
  */
-export function ProfileTab({ profile, setProfile, profileSubmitted, submitError, onSubmit }) {
+export function ProfileTab({ profile, setProfile, profileSubmitted, submitError, photoUploadStatus, onSubmit }) {
     const fileInputRef = useRef(null);
+    const [photoError, setPhotoError] = useState("");
 
-    const handlePhoto = (e) => {
+    const handlePhoto = async (e) => {
         const file = e.target.files?.[0];
         if (!file || !file.type.startsWith("image/")) return;
-        const reader = new FileReader();
-        reader.onload = () => setProfile((p) => ({ ...p, photo: reader.result }));
-        reader.readAsDataURL(file);
+
+        if (file.size > PHOTO_MAX_SOURCE_BYTES) {
+            setPhotoError("Choose a photo under 6MB so the prototype stays light.");
+            return;
+        }
+
+        try {
+            const photo = await resizeProfilePhoto(file);
+            setProfile((p) => ({ ...p, photo }));
+            setPhotoError("");
+        } catch (error) {
+            console.warn("Profile photo resize failed", error);
+            setPhotoError("That photo could not be prepared. Try another one.");
+        }
     };
 
     return (
@@ -76,6 +126,8 @@ export function ProfileTab({ profile, setProfile, profileSubmitted, submitError,
                 )}
             </div>
 
+            {photoError && <p style={{ fontSize: 12, color: "#FF5C7A", marginTop: 8 }}>{photoError}</p>}
+
             <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 18 }}>
                 <div className="field">
                     <label style={labelStyle}>Name</label>
@@ -107,7 +159,11 @@ export function ProfileTab({ profile, setProfile, profileSubmitted, submitError,
                 </div>
             </div>
 
-            {submitError && <p style={{ fontSize: 12, color: "#FF5C7A", marginTop: 14 }}>{submitError}</p>}
+            {(submitError || photoUploadStatus) && (
+                <p style={{ fontSize: 12, color: submitError ? "#FF5C7A" : "#8A8D99", marginTop: 14 }}>
+                    {submitError || photoUploadStatus}
+                </p>
+            )}
 
             <button
                 onClick={onSubmit}

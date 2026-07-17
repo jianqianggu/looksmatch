@@ -9,7 +9,7 @@ import { SwipePhase } from "./SwipePhase";
 import { PROFILES, DAILY_QUOTA, YOU_ID } from "../constants/profiles";
 import { buildShuffledVotingQueue, buildShuffledSwipeQueue } from "../utils/queueBuilder";
 import { computeVerdict, pairKey } from "../utils/verdictEngine";
-import { fbGet, fbPut } from "../utils/firebase";
+import { fbGet, fbPost, fbPut } from "../utils/firebase";
 import { canWrite, recordWrite } from "../utils/rateLimiter";
 import { globalStyles } from "../styles/globalStyles";
 import { tabBtnStyle } from "../styles/buttonStyles";
@@ -72,6 +72,17 @@ async function syncVoteUndoToFirebase(key, choice) {
     if (result) recordWrite();
 }
 
+async function uploadPhotoToFirebase(photo) {
+    if (!photo || !canWrite()) return null;
+
+    const result = await fbPost("photos", {
+        data: photo,
+        createdAt: Date.now(),
+    });
+    if (result) recordWrite();
+    return result;
+}
+
 /**
  * Main Looksmatch Application
  *
@@ -88,6 +99,7 @@ export default function LooksmatchApp() {
     const [profile, setProfile] = useState({ name: "", age: "", tagline: "", photo: null });
     const [profileSubmitted, setProfileSubmitted] = useState(false);
     const [submitError, setSubmitError] = useState("");
+    const [photoUploadStatus, setPhotoUploadStatus] = useState("");
 
     // Queue state
     const [votingQueue] = useState(() => buildShuffledVotingQueue(PROFILES));
@@ -126,6 +138,14 @@ export default function LooksmatchApp() {
             return;
         }
         setSubmitError("");
+        setPhotoUploadStatus("Uploading compressed photo to Firebase for static sync...");
+        uploadPhotoToFirebase(profile.photo).then((result) => {
+            setPhotoUploadStatus(
+                result
+                    ? "Photo received. GitHub Actions can mirror it into static Pages assets."
+                    : "Photo upload skipped; profile still works locally."
+            );
+        });
         setProfileSubmitted(true);
         setTab("vote");
     };
@@ -285,6 +305,7 @@ export default function LooksmatchApp() {
                         setProfile={setProfile}
                         profileSubmitted={profileSubmitted}
                         submitError={submitError}
+                        photoUploadStatus={photoUploadStatus}
                         onSubmit={submitProfile}
                     />
                 )}

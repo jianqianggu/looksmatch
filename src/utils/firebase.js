@@ -8,6 +8,10 @@
  *   totalVotes: number
  *   lastUpdated: number
  *
+ * /photos/{photoId}
+ *   data: string         // compressed data URL for GitHub Actions mirroring
+ *   createdAt: number
+ *
  * Security rules to set in Firebase Console:
  * {
  *   "rules": {
@@ -16,6 +20,13 @@
  *       "$pairKey": {
  *         ".write": "newData.exists() && newData.hasChildren(['sameLeague','aOverB','bOverA','totalVotes','lastUpdated'])",
  *         ".validate": "newData.child('sameLeague').isNumber() && newData.child('aOverB').isNumber() && newData.child('bOverA').isNumber() && newData.child('totalVotes').isNumber() && newData.child('lastUpdated').isNumber() && newData.child('totalVotes').val() === (newData.child('sameLeague').val() + newData.child('aOverB').val() + newData.child('bOverA').val())"
+ *       }
+ *     },
+ *     "photos": {
+ *       ".read": true,
+ *       "$photoId": {
+ *         ".write": "newData.exists() && newData.hasChildren(['data','createdAt'])",
+ *         ".validate": "newData.child('data').isString() && newData.child('createdAt').isNumber()"
  *       }
  *     },
  *     ".read": false,

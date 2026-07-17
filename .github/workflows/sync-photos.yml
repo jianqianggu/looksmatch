@@ -1,0 +1,40 @@
+name: Sync Firebase Photos
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-firebase-photos
+  cancel-in-progress: false
+
+jobs:
+  sync-photos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm run sync:photos
+        env:
+          VITE_FIREBASE_URL: ${{ secrets.VITE_FIREBASE_URL }}
+          PHOTO_SYNC_LIMIT: 12
+          PHOTO_SYNC_MAX_BYTES: 350000
+      - name: Commit mirrored photos
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/uploads
+          if git diff --cached --quiet; then
+            echo "No new Firebase photos to mirror."
+          else
+            git commit -m "Mirror Firebase photos"
+            git push
+          fi

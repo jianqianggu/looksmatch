@@ -5,7 +5,8 @@
     "scripts": {
         "dev": "vite",
         "build": "vite build",
-        "preview": "vite preview"
+        "preview": "vite preview",
+        "sync:photos": "node scripts/syncFirebasePhotos.mjs"
     },
     "dependencies": {
         "lucide-react": "^0.292.0",
