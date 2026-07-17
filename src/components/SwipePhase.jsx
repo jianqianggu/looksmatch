@@ -3,11 +3,44 @@ import { Heart, X, Undo2, ArrowRight, RotateCcw } from "lucide-react";
 import { AvatarFallback, PhotoCard } from "./PhotoCard";
 import { circleBtnStyle, undoBtnStyle } from "../styles/buttonStyles";
 
+const MAX_LOCAL_CHAT_MESSAGES = 5;
+const MAX_LOCAL_CHAT_CHARS = 160;
+
 /**
  * SwipePhase - Displays a candidate for swiping and shows matches
  */
 export function SwipePhase({ candidate, reveal, onSwipe, onUndo, onReset, canUndo, matches, done }) {
     const [activeChat, setActiveChat] = useState(null);
+    const [chatDraft, setChatDraft] = useState("");
+    const [localMessages, setLocalMessages] = useState({});
+    const activeChatMessages = activeChat ? localMessages[activeChat.id] || [] : [];
+
+    const closeChat = () => {
+        setActiveChat(null);
+        setChatDraft("");
+    };
+
+    const openChat = (match) => {
+        setActiveChat(match);
+        setChatDraft("");
+    };
+
+    const sendLocalMessage = () => {
+        if (!activeChat) return;
+        const text = chatDraft.trim().slice(0, MAX_LOCAL_CHAT_CHARS);
+        if (!text) return;
+
+        setLocalMessages((prev) => {
+            const previousMessages = prev[activeChat.id] || [];
+            return {
+                ...prev,
+                [activeChat.id]: [...previousMessages, { id: `${Date.now()}-${previousMessages.length}`, text }].slice(
+                    -MAX_LOCAL_CHAT_MESSAGES
+                ),
+            };
+        });
+        setChatDraft("");
+    };
     return (
         <>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
@@ -144,7 +177,7 @@ export function SwipePhase({ candidate, reveal, onSwipe, onUndo, onReset, canUnd
                                     <span style={{ fontSize: 14 }}>{m.name}</span>
                                 </div>
                                 <button
-                                    onClick={() => setActiveChat(m)}
+                                    onClick={() => openChat(m)}
                                     style={{
                                         display: "flex",
                                         alignItems: "center",
@@ -184,7 +217,7 @@ export function SwipePhase({ candidate, reveal, onSwipe, onUndo, onReset, canUnd
                             <p style={{ fontWeight: 700, margin: "4px 0 0" }}>{activeChat.name}</p>
                         </div>
                         <button
-                            onClick={() => setActiveChat(null)}
+                            onClick={closeChat}
                             style={{
                                 background: "transparent",
                                 border: "none",
@@ -197,19 +230,65 @@ export function SwipePhase({ candidate, reveal, onSwipe, onUndo, onReset, canUnd
                         </button>
                     </div>
                     <p style={{ color: "#F2F1ED", fontSize: 13, margin: "12px 0 0" }}>
-                        Chat unlock is stubbed for the prototype. No messages are sent or stored yet.
+                        Local chat sandbox only. Messages stay in this tab and are never sent to Firebase.
                     </p>
-                    <div
-                        style={{
-                            marginTop: 10,
-                            border: "1px solid #2A2D37",
-                            borderRadius: 10,
-                            padding: "9px 10px",
-                            color: "#565A66",
-                            fontSize: 12,
-                        }}
-                    >
-                        Message composer placeholder — disabled until chat storage is added.
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
+                        {activeChatMessages.length === 0 ? (
+                            <p style={{ color: "#565A66", fontSize: 12, margin: 0 }}>No local notes yet.</p>
+                        ) : (
+                            activeChatMessages.map((message) => (
+                                <div
+                                    key={message.id}
+                                    style={{
+                                        alignSelf: "flex-end",
+                                        maxWidth: "86%",
+                                        background: "#FF5C7A",
+                                        color: "#fff",
+                                        borderRadius: 12,
+                                        padding: "8px 10px",
+                                        fontSize: 12,
+                                        lineHeight: 1.35,
+                                    }}
+                                >
+                                    {message.text}
+                                </div>
+                            ))
+                        )}
+                        <textarea
+                            rows={2}
+                            value={chatDraft}
+                            maxLength={MAX_LOCAL_CHAT_CHARS}
+                            onChange={(event) => setChatDraft(event.target.value)}
+                            placeholder="Write a local-only opener"
+                            style={{
+                                width: "100%",
+                                resize: "vertical",
+                                background: "#0E0F13",
+                                border: "1px solid #2A2D37",
+                                borderRadius: 10,
+                                color: "#F2F1ED",
+                                padding: "9px 10px",
+                                fontSize: 12,
+                                boxSizing: "border-box",
+                            }}
+                        />
+                        <button
+                            type="button"
+                            onClick={sendLocalMessage}
+                            disabled={!chatDraft.trim()}
+                            style={{
+                                alignSelf: "flex-end",
+                                background: chatDraft.trim() ? "#FF5C7A" : "#2A2D37",
+                                border: "none",
+                                color: chatDraft.trim() ? "#fff" : "#8A8D99",
+                                borderRadius: 8,
+                                padding: "7px 12px",
+                                fontSize: 12,
+                                cursor: chatDraft.trim() ? "pointer" : "default",
+                            }}
+                        >
+                            Save local note
+                        </button>
                     </div>
                 </div>
             )}
