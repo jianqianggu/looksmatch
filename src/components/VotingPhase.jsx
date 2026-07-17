@@ -88,12 +88,12 @@ export function VotingPhase({ pair, votesToday, quota, flash, tallies, onVote, o
 
             {pairTally && (
                 <p style={{ fontSize: 11, color: "#565A66", textAlign: "center", marginTop: 8 }}>
-                    {pairTally.totalVotes} votes cast on this pair
+                    {pairTally.totalVotes} session vote{pairTally.totalVotes === 1 ? "" : "s"} on this pair
                 </p>
             )}
 
             <p style={{ fontSize: 11, color: "#565A66", textAlign: "center", marginTop: 14 }}>
-                You won't see how the crowd voted — that's what keeps the verdict honest.
+                Firebase is only used for photo intake; vote tallies stay in this tab for the prototype.
             </p>
         </>
     );

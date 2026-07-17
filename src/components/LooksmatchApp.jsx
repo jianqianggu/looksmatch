@@ -9,7 +9,7 @@ import { SwipePhase } from "./SwipePhase";
 import { PROFILES, DAILY_QUOTA, YOU_ID } from "../constants/profiles";
 import { buildShuffledVotingQueue, buildShuffledSwipeQueue } from "../utils/queueBuilder";
 import { computeVerdict, pairKey } from "../utils/verdictEngine";
-import { fbGet, fbPost, fbPut } from "../utils/firebase";
+import { fbPost } from "../utils/firebase";
 import { canWrite, recordWrite } from "../utils/rateLimiter";
 import { hasUploadedPhoto, recordUploadedPhoto } from "../utils/photoUploadLedger";
 import { fetchStaticPhotos } from "../utils/staticPhotoManifest";
@@ -59,20 +59,9 @@ function decrementVoteTally(data, choice) {
     };
 }
 
-async function syncVoteToFirebase(key, choice) {
-    if (!VOTE_CHOICES.includes(choice) || !canWrite()) return;
-
-    const data = incrementVoteTally(await fbGet(`votes/${key}`), choice);
-    const result = await fbPut(`votes/${key}`, data);
-    if (result) recordWrite();
-}
-
-async function syncVoteUndoToFirebase(key, choice) {
-    if (!VOTE_CHOICES.includes(choice) || !canWrite()) return;
-
-    const data = decrementVoteTally(await fbGet(`votes/${key}`), choice);
-    const result = await fbPut(`votes/${key}`, data);
-    if (result) recordWrite();
+function applyLocalVoteTally(tallies, key, choice, updateTally) {
+    if (!VOTE_CHOICES.includes(choice)) return tallies;
+    return { ...tallies, [key]: updateTally(tallies[key], choice) };
 }
 
 async function uploadPhotoToFirebase(photo) {
@@ -109,7 +98,7 @@ export default function LooksmatchApp() {
     const [votingQueue, setVotingQueue] = useState(() => buildShuffledVotingQueue(PROFILES));
     const [swipeQueue, setSwipeQueue] = useState(() => buildShuffledSwipeQueue(PROFILES));
     const [resolved, setResolved] = useState({}); // pairKey -> 'match' | 'no-match'
-    const [voteTallies, setVoteTallies] = useState({}); // pairKey -> Firebase vote tally
+    const [voteTallies, setVoteTallies] = useState({}); // pairKey -> in-tab vote tally
 
     // Voting phase state
     const [votesToday, setVotesToday] = useState(0);
@@ -172,22 +161,6 @@ export default function LooksmatchApp() {
     // ---- VOTING PHASE ----
 
     const currentVotingPair = votingQueue[votingCursor];
-    const currentVotingKey = currentVotingPair ? pairKey(currentVotingPair[0].id, currentVotingPair[1].id) : null;
-
-    useEffect(() => {
-        if (!currentVotingKey) return undefined;
-
-        let cancelled = false;
-        fbGet(`votes/${currentVotingKey}`).then((data) => {
-            if (!cancelled && data) {
-                setVoteTallies((prev) => ({ ...prev, [currentVotingKey]: data }));
-            }
-        });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [currentVotingKey]);
 
     const castVote = useCallback(
         (a, b, choice) => {
@@ -197,13 +170,7 @@ export default function LooksmatchApp() {
             const optimisticTally = VOTE_CHOICES.includes(choice)
                 ? incrementVoteTally(voteTallies[key], choice)
                 : null;
-            setVoteTallies((prev) => {
-                if (!VOTE_CHOICES.includes(choice)) return prev;
-
-                return { ...prev, [key]: incrementVoteTally(prev[key], choice) };
-            });
-
-            syncVoteToFirebase(key, choice);
+            setVoteTallies((prev) => applyLocalVoteTally(prev, key, choice, incrementVoteTally));
             setResolved((prev) =>
                 key in prev ? prev : { ...prev, [key]: computeVerdict(optimisticTally, key) }
             );
@@ -229,33 +196,13 @@ export default function LooksmatchApp() {
             else delete copy[last.key];
             return copy;
         });
-        setVoteTallies((prev) => {
-            if (!VOTE_CHOICES.includes(last.choice)) return prev;
-            return { ...prev, [last.key]: decrementVoteTally(prev[last.key], last.choice) };
-        });
-        syncVoteUndoToFirebase(last.key, last.choice);
+        setVoteTallies((prev) => applyLocalVoteTally(prev, last.key, last.choice, decrementVoteTally));
         setVoteHistory((h) => h.slice(0, -1));
     }, [voteHistory]);
 
     // ---- SWIPING PHASE ----
 
     const currentCandidate = swipeQueue[swipeCursor];
-    const currentSwipeKey = currentCandidate ? pairKey(YOU_ID, currentCandidate.id) : null;
-
-    useEffect(() => {
-        if (!currentSwipeKey) return undefined;
-
-        let cancelled = false;
-        fbGet(`votes/${currentSwipeKey}`).then((data) => {
-            if (!cancelled && data) {
-                setVoteTallies((prev) => ({ ...prev, [currentSwipeKey]: data }));
-            }
-        });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [currentSwipeKey]);
 
     const swipe = useCallback(
         (liked) => {

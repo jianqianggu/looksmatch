@@ -22,20 +22,20 @@ export function trueVerdict(key) {
 }
 
 /**
- * Compute verdict from Firebase vote tallies.
+ * Compute verdict from an in-tab vote tally.
  * If sameLeague votes are a majority over out-of-league votes, verdict is "match".
  * Falls back to the deterministic mock verdict until at least 3 votes exist.
- * @param {object|null} firebaseVotes - Firebase tally data
+ * @param {object|null} voteTally - Session tally data
  * @param {string} key - Pair key for seeded fallback
  * @returns {'match' | 'no-match'} The verdict
  */
-export function computeVerdict(firebaseVotes, key) {
-    const totalVotes = Number(firebaseVotes?.totalVotes) || 0;
-    if (!firebaseVotes || totalVotes < 3) return trueVerdict(key);
+export function computeVerdict(voteTally, key) {
+    const totalVotes = Number(voteTally?.totalVotes) || 0;
+    if (!voteTally || totalVotes < 3) return trueVerdict(key);
 
-    const sameLeague = Number(firebaseVotes.sameLeague) || 0;
-    const aOverB = Number(firebaseVotes.aOverB) || 0;
-    const bOverA = Number(firebaseVotes.bOverA) || 0;
+    const sameLeague = Number(voteTally.sameLeague) || 0;
+    const aOverB = Number(voteTally.aOverB) || 0;
+    const bOverA = Number(voteTally.bOverA) || 0;
 
     return sameLeague > aOverB + bOverA ? "match" : "no-match";
 }
