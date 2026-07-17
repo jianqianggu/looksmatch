@@ -16,8 +16,8 @@
  * {
  *   "rules": {
  *     "votes": {
- *       ".read": true,
  *       "$pairKey": {
+ *         ".read": true,
  *         ".write": "newData.exists() && newData.hasChildren(['sameLeague','aOverB','bOverA','totalVotes','lastUpdated'])",
  *         ".validate": "newData.child('sameLeague').isNumber() && newData.child('aOverB').isNumber() && newData.child('bOverA').isNumber() && newData.child('totalVotes').isNumber() && newData.child('lastUpdated').isNumber() && newData.child('totalVotes').val() === (newData.child('sameLeague').val() + newData.child('aOverB').val() + newData.child('bOverA').val())"
  *       }

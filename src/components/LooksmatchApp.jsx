@@ -124,12 +124,6 @@ export default function LooksmatchApp() {
     const swipingUnlocked = profileSubmitted && votesToday >= DAILY_QUOTA;
     const swipeDone = swipeCursor >= swipeQueue.length;
 
-    useEffect(() => {
-        fbGet("votes").then((data) => {
-            if (data) setVoteTallies(data);
-        });
-    }, []);
-
     // ---- PROFILE PHASE ----
 
     const submitProfile = () => {
@@ -153,6 +147,22 @@ export default function LooksmatchApp() {
     // ---- VOTING PHASE ----
 
     const currentVotingPair = votingQueue[votingCursor];
+    const currentVotingKey = currentVotingPair ? pairKey(currentVotingPair[0].id, currentVotingPair[1].id) : null;
+
+    useEffect(() => {
+        if (!currentVotingKey) return undefined;
+
+        let cancelled = false;
+        fbGet(`votes/${currentVotingKey}`).then((data) => {
+            if (!cancelled && data) {
+                setVoteTallies((prev) => ({ ...prev, [currentVotingKey]: data }));
+            }
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [currentVotingKey]);
 
     const castVote = useCallback(
         (a, b, choice) => {
@@ -205,6 +215,22 @@ export default function LooksmatchApp() {
     // ---- SWIPING PHASE ----
 
     const currentCandidate = swipeQueue[swipeCursor];
+    const currentSwipeKey = currentCandidate ? pairKey(YOU_ID, currentCandidate.id) : null;
+
+    useEffect(() => {
+        if (!currentSwipeKey) return undefined;
+
+        let cancelled = false;
+        fbGet(`votes/${currentSwipeKey}`).then((data) => {
+            if (!cancelled && data) {
+                setVoteTallies((prev) => ({ ...prev, [currentSwipeKey]: data }));
+            }
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [currentSwipeKey]);
 
     const swipe = useCallback(
         (liked) => {
