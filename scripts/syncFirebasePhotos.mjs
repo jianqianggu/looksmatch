@@ -27,6 +27,10 @@ async function loadManifest() {
     return { photos: Array.isArray(manifest.photos) ? manifest.photos : [] };
 }
 
+function isRulesPermissionFailure(response) {
+    return response.status === 401 || response.status === 403;
+}
+
 async function removeMirroredPhoto(photo) {
     if (!photo?.src?.startsWith("uploads/")) return;
 
@@ -47,6 +51,13 @@ async function fetchPhotoInbox() {
     });
     const response = await fetch(`${firebaseUrl("photos")}?${query.toString()}`);
     if (!response.ok) {
+        if (isRulesPermissionFailure(response)) {
+            console.warn(
+                `Firebase photo inbox is not readable (${response.status} ${response.statusText}); skipping sync.`
+            );
+            return null;
+        }
+
         throw new Error(`Firebase photo sync failed: ${response.status} ${response.statusText}`);
     }
 
@@ -59,6 +70,10 @@ async function syncPhotos() {
     const manifest = await loadManifest();
     const knownIds = new Set(manifest.photos.map((photo) => photo.id));
     const inbox = await fetchPhotoInbox();
+    if (inbox === null) {
+        console.log("No Firebase photos mirrored because the photo inbox could not be read.");
+        return;
+    }
     const newPhotos = [];
 
     for (const [id, photo] of Object.entries(inbox)) {
@@ -88,6 +103,11 @@ async function syncPhotos() {
     const removedPhotos = allPhotos.slice(PHOTO_MANIFEST_LIMIT);
 
     await Promise.all(removedPhotos.map(removeMirroredPhoto));
+    if (newPhotos.length === 0 && removedPhotos.length === 0) {
+        console.log("No new Firebase photos to mirror.");
+        return;
+    }
+
     await writeFile(
         MANIFEST_PATH,
         `${JSON.stringify({ updatedAt: Date.now(), photos }, null, 2)}\n`
